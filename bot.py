@@ -12,7 +12,7 @@ TOKEN = os.getenv("BOT_TOKEN")
 CHANNEL_ID = os.getenv("CHAT_ID")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-# ================== قائمة 5000 شخصية أدبية ==================
+# ================== قائمة الشخصيات ==================
 PERSONALITIES = [
     "المتنبي", "أبو تمام", "البحتري", "ابن الرومي", "المعري",
     "امرؤ القيس", "عنترة بن شداد", "زهير بن أبي سلمى", "لبيد بن ربيعة",
@@ -55,7 +55,7 @@ PERSONALITIES = [
     "توماس هاردي", "ديفيد هربرت لورانس", "جورج إليوت", "ويليام بليك",
     "صموئيل جونسون", "جون دون", "جون ميلتون", "إدموند سبنسر",
     "جيفري تشوسر", "ويليام وردزوورث", "صامويل تايلور كوليردج",
-    "جون كيت斯", "بيرسي بيش شيلي", "جورج بايرون", "ألفريد تنيسون",
+    "جون كيتس", "بيرسي بيش شيلي", "جورج بايرون", "ألفريد تنيسون",
     "روبرت براونينغ", "إليزابيث باريت براونينغ", "كريستينا روسيتي",
     "توماس ستيرنز إليوت", "ويليام بتلر ييتس", "والاس ستيفنز",
     "ماريان مور", "ويليام كارلوس ويليامز", "إيزرا باوند",
@@ -115,18 +115,47 @@ def generate_quote():
         print(f"❌ خطأ في التوليد: {e}")
         return '"العلم نور والجهل ظلمة" (الإمام علي)'
 
-def send_quote():
+def get_image_url():
+    """جلب صورة عشوائية من Unsplash"""
+    try:
+        # كلمات مفتاحية متنوعة
+        keywords = ["nature", "city", "sky", "book", "quote", "peace", "sunset", "ocean"]
+        keyword = random.choice(keywords)
+        url = f"https://source.unsplash.com/800x600/?{keyword}"
+        return url
+    except Exception as e:
+        print(f"❌ خطأ في جلب الصورة: {e}")
+        return None
+
+def send_quote_with_image():
+    """إرسال اقتباس مع صورة إلى القناة"""
     quote = generate_quote()
-    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    text = f"{quote}\n\n#جمهورية_الزلم"
-    data = {"chat_id": CHANNEL_ID, "text": text, "parse_mode": "HTML"}
+    image_url = get_image_url()
+    
+    if image_url:
+        data = {
+            "chat_id": CHANNEL_ID,
+            "photo": image_url,
+            "caption": f"{quote}\n\n#جمهورية_الزلم",
+            "parse_mode": "HTML"
+        }
+        url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
+    else:
+        # إذا فشلت الصورة، أرسل نصاً فقط
+        data = {
+            "chat_id": CHANNEL_ID,
+            "text": f"{quote}\n\n#جمهورية_الزلم",
+            "parse_mode": "HTML"
+        }
+        url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     
     try:
-        response = requests.post(url, data=data, timeout=10)
+        response = requests.post(url, data=data, timeout=20)
         if response.status_code == 200:
-            print(f"✅ تم الإرسال: {quote[:30]}...")
+            print(f"✅ تم الإرسال مع صورة: {quote[:30]}...")
         else:
             print(f"❌ فشل الإرسال: {response.status_code}")
+            print(f"📄 الرد: {response.text}")
     except Exception as e:
         print(f"❌ خطأ: {e}")
 
@@ -151,6 +180,7 @@ def main():
     print(f"📢 القناة: {CHANNEL_ID}")
     print(f"👤 عدد الشخصيات: {len(PERSONALITIES)}")
     print("🤖 يستخدم Groq API (مجاني وسريع)")
+    print("🖼️ يرسل مع صورة من Unsplash")
     print("⏰ سيرسل كل 10 دقائق")
     print("💬 يرد على رسائل المستخدمين")
     print("=" * 50)
@@ -164,7 +194,7 @@ def main():
         now = datetime.now()
         
         if (now - last_send).seconds >= 600:
-            send_quote()
+            send_quote_with_image()
             last_send = now
         
         try:
