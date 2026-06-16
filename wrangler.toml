@@ -1,9 +1,0 @@
-name = "sada-quotes-bot"
-main = "bot.py"
-compatibility_date = "2025-06-01"
-
-[build]
-command = "pip install -r requirements.txt"
-
-[compatibility_flags]
-python_workers = true
